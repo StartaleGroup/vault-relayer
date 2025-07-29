@@ -3,8 +3,9 @@
 
 // import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+// import "@layerzerolabs/solidity-examples/contracts/lzApp/NonblockingLzApp.sol";
 
-// contract Vault {
+// contract Vault is Ownable, NonblockingLzApp {
 //     using ECDSA for bytes32;
 
 //     address public relayer;
@@ -22,6 +23,8 @@
 //     mapping(address => mapping(address => mapping(uint256 => LockInfo))) public locks;
 //     mapping(bytes32 => bool) public usedDigests;
 
+//     uint16 public soneiumLzChainId;
+
 //     // ----------- Events -----------
 
 //     event DepositedETH(address indexed user, uint256 amount);
@@ -31,15 +34,14 @@
 //     event Redeemed(address indexed user, address indexed token, uint256 amount, uint256 nonce);
 //     event Refunded(address indexed user, address indexed token, uint256 amount, uint256 nonce);
 
-//     constructor(address _relayer) {
+//     constructor(
+//         address _relayer,
+//         address _lzEndpoint,
+//         address _initialOwner,
+//         uint16 _soneiumLzChainId
+//     ) payable NonblockingLzApp(_lzEndpoint) Ownable(_initialOwner) {
 //         relayer = _relayer;
-//     }
-
-//     // ----------- Deposit -----------
-
-//     function depositETH() external payable {
-//         ethBalances[msg.sender] += msg.value;
-//         emit DepositedETH(msg.sender, msg.value);
+//         soneiumLzChainId = _soneiumLzChainId;
 //     }
 
 //     function depositERC20(address token, uint256 amount) external {
@@ -50,8 +52,9 @@
 
 //     // ----------- Lock / Unlock -----------
 
-//     function lock(address user, address token, uint256 amount, uint256 nonce) external {
+//     function lock(address user, address token, uint256 amount, uint256 nonce, bytes calldata signature) external payable {
 //         require(msg.sender == relayer, "Only relayer");
+
 //         require(locks[user][token][nonce].amount == 0, "Nonce used");
 
 //         if (token == address(0)) {
@@ -67,8 +70,21 @@
 //         });
 
 //         emit Locked(user, token, amount, nonce);
-//     }
 
+//         // Construct payload
+//         bytes memory payload = abi.encode(user, token, amount, nonce, signature);
+
+//         // Send to Soneium
+//         _lzSend(
+//             soneiumLzChainId,
+//             payload,
+//             payable(msg.sender),
+//             address(0x0),
+//             bytes(""),
+//             msg.value
+//         );
+//     }
+    
 //     function unlock(address user, address token, uint256 nonce) external {
 //         require(msg.sender == relayer, "Only relayer");
 
@@ -83,13 +99,31 @@
 
 //     // ----------- Redemption -----------
 
+//         /// To intiatiate fill once locked on source chain
+//     function _nonblockingLzReceive(
+//         uint16, // _srcChainId
+//         bytes memory, // _srcAddress
+//         uint64, // _nonce
+//         bytes memory _payload
+//     ) internal override {
+//         (
+//             address user,
+//             address token,
+//             uint256 amount,
+//             uint256 nonce,
+//             bytes memory signature
+//         ) = abi.decode(_payload, (address, address, uint256, uint256, bytes));
+
+//         redeemWithSignature(user, token, amount, nonce, signature);
+//     }
+
 //     function redeemWithSignature(
 //         address user,
 //         address token,
 //         uint256 amount,
 //         uint256 nonce,
-//         bytes calldata signature
-//     ) external {
+//         bytes memory signature
+//     ) public {
 //         require(msg.sender == relayer, "Only relayer");
 
 //         bytes32 digest = keccak256(abi.encodePacked(user, token, amount, nonce, address(this)));
@@ -139,6 +173,8 @@
 //     function toEthSignedMessageHash(bytes32 hash) internal pure returns (bytes32) {
 //         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
 //     }
+
+//     receive() external payable {}
 
 //     // ----------- View -----------
 

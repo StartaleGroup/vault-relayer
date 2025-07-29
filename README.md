@@ -32,16 +32,16 @@
 ### 5. **Relayer locks funds on OP/Base Vault**
 - Calls:
   ```solidity
-  lock(user, token, amount, nonce)
+  lock(user, token, amount, nonce, signature)
 
-### 6. Relayer sends redeem intent to Soneium
+### 6. Relayer or Layerzero sends redeem intent to Soneium
 - Constructs digest:
 
 keccak256(user, token, amount, nonce, vault_soneium_address)
 - User signs digest via AbstractJS (Kernel Smart Account)
 
 ### 7. Soneium Vault fulfills the redemption
-- Relayer calls:
+- Relayer or Layerzero calls:
 
 redeemWithSignature(user, token, amount, nonce, signature)
 - Vault verifies signature and transfers tokens to user’s Smart Account
