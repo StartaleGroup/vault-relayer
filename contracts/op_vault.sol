@@ -50,6 +50,12 @@
 //         emit DepositedERC20(msg.sender, token, amount);
 //     }
 
+//     function depositETH() external payable {
+//         require(msg.value > 0, "No ETH sent");
+//         ethBalances[msg.sender] += msg.value;
+//         emit DepositedETH(msg.sender, msg.value);
+//     }
+
 //     // ----------- Lock / Unlock -----------
 
 //     function lock(address user, address token, uint256 amount, uint256 nonce, bytes calldata signature) external payable {
